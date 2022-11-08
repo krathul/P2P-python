@@ -1,13 +1,12 @@
-import socket, pickle
+import socket, pickle, sys
 from socket import AF_INET, SOCK_STREAM
 
 
-class Peers:
-    def __init__(self, ip, peer_port, trade_port, index) -> None:
+class Peer:
+    def __init__(self, ip, peer_port, trade_port) -> None:
         self.ip = ip
-        self.pport = peer_port
-        self.tport = trade_port
-        self.peer_index = index
+        self.pport = int(peer_port)
+        self.tport = int(trade_port)
         self.trading_socket = self.create_socket(self.tport)
         self.socket = self.create_socket(self.pport)
 
@@ -15,7 +14,7 @@ class Peers:
 
     def create_socket(self, port):
         new_socket = socket.socket(AF_INET, SOCK_STREAM)
-        new_socket.bind(socket.gethostname(), port)
+        new_socket.bind((socket.gethostname(), port))
 
         return new_socket
 
@@ -32,7 +31,7 @@ class Peers:
     def connect_central(self, central_ip, central_port):
         self.peer_socket.connect((central_ip, central_port))
         self.peer_socket.send(
-            (f"Connection succesfully established with Peer#{self.peer_index}").encode()
+            (f"Connection succesfully established with Peer#{self.pport}").encode()
         )
         self.incoming_central()
 
@@ -72,9 +71,7 @@ class Peers:
             )
             # seller_ip, port = choose_seller(sellers_list)
             # self.connect_to_seller(seller_ip, port)
-            
 
-            
     def connect_to_seller(self, ip:str, port:int):
         self.trading_socket.connect((ip, port))
         while True:
@@ -83,6 +80,11 @@ class Peers:
             print(recvd_message) # maybe print it
             self.trading_socket.close()
             return
+
+if __name__ == "__main__":
+    peer = Peer(socket.gethostname(), *sys.argv[1:])
+    peer.connect_central()
+
 
 
         
