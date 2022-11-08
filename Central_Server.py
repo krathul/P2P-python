@@ -11,7 +11,7 @@ class Central:
     def Create_Socket(self,port_no):
         ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        ServerSocket.bind((socket.gethostbyname('localhost'), port_no))
+        ServerSocket.bind((socket.gethostname(), port_no))
         return ServerSocket
     
     def Search_Peer(self, Item):

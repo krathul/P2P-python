@@ -8,7 +8,7 @@ class Peer:
         self.pport = int(peer_port)
         self.tport = int(trade_port)
         self.trading_socket = self.create_socket(self.tport)
-        self.socket = self.create_socket(self.pport)
+        self.peer_socket = self.create_socket(self.pport)
 
         self.seller_inventory = []
 
@@ -63,7 +63,7 @@ class Peer:
             return
 
     # used for forwarding purchase message
-    def sell_request(self, query):
+    def buy_request(self, query):
         self.trading_socket.send(f"QUERY {query}")
         while True:
             sellers_list = pickle.load(
@@ -82,9 +82,11 @@ class Peer:
             return
 
 if __name__ == "__main__":
-    peer = Peer(socket.gethostname(), *sys.argv[1:])
-    peer.connect_central()
+    peer = Peer(socket.gethostname(), *sys.argv[1:-1])
+    peer.connect_central(socket.gethostname(), 7890)
+    if sys.argv[-1] == "B":
+        query = input("Enter your Query: ")
+        sellers = peer.buy_request(query)
+        peer.connect_to_seller(*sellers[-1])
 
-
-
-        
+    
