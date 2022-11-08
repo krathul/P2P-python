@@ -5,12 +5,13 @@ import pickle
 class Central:
     def __init__(self, port:int):
         self.Ledger = []
+        print(port)
         self.Socket = self.Create_Socket(port)
 
     def Create_Socket(self,port_no):
         ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        ServerSocket.bind((socket.gethostname(), port_no))
+        ServerSocket.bind((socket.gethostbyname('localhost'), port_no))
         return ServerSocket
     
     def Search_Peer(self, Item):
@@ -26,9 +27,10 @@ class Central:
         sl_bin = pickle.dumps(seller_list)  # CONVERTS PYTHON OBJ TO BYTES
         return sl_bin
 
-    def Communicate(self, client_socket:socket.socket):
+    def Communicate(self, client_socket:socket.socket, _):
         while True:
             message = client_socket.recv(1024).decode().split()
+            print(message)
             if message[0] == "QUERY":
                 sl_bin=self.Search_Peer(message[1])
                 if sl_bin==None:
@@ -45,7 +47,8 @@ class Central:
         while True:
             # accept connections from outside
             (clientsocket, address) = self.Socket.accept()
+            print(address, "got connected")
             self.Ledger.append((clientsocket,address))
             # 
-            threading.Thread(target = self.Communicate,args = (clientsocket)).start()
+            threading.Thread(target = self.Communicate,args = (clientsocket,"")).start()
 
