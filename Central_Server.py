@@ -11,16 +11,18 @@ class Central:
     def Create_Socket(self,port_no):
         ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        ServerSocket.bind((socket.gethostname(), port_no))
+        ServerSocket.bind((socket.gethostbyname('localhost'), port_no))
         return ServerSocket
     
-    def Search_Peer(self, Item):
+    def Search_Peer(self, Item, client_socket):
         peer:socket.socket
         seller_list=[]
         for peer,addr in self.Ledger:
-            peer.send(Item.encode())
-            if peer.recv(1024).decode() == "POSITIVE":
-                seller_list.append(addr)
+            if peer != client_socket:
+                print("Searching on ",addr[0]," ",addr[1])
+                peer.send(Item.encode())
+                if peer.recv(1024).decode().upper() == "POSITIVE":
+                    seller_list.append(addr)
         
         if len(seller_list) == 0: return None
         
@@ -29,10 +31,10 @@ class Central:
 
     def Communicate(self, client_socket:socket.socket, _):
         while True:
-            message = client_socket.recv(1024).decode().split()
+            message = client_socket.recv(1024).decode()
             print(message)
-            if message[0] == "QUERY":
-                sl_bin=self.Search_Peer(message[1])
+            if message.split()[0] == "QUERY":
+                sl_bin=self.Search_Peer(message.split()[1], client_socket)
                 if sl_bin==None:
                     client_socket.send("Item Not Found".encode())
                 else:
@@ -47,7 +49,6 @@ class Central:
         while True:
             # accept connections from outside
             (clientsocket, address) = self.Socket.accept()
-            print(address, "got connected")
             self.Ledger.append((clientsocket,address))
             # 
             threading.Thread(target = self.Communicate,args = (clientsocket,"")).start()
