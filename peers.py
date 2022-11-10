@@ -41,7 +41,7 @@ class Peer:
                 query = self.peer_socket.recv(1024).decode()
                 if query is not None:
                     if not self.search_inventory(query):
-                        print("HEREEEEE")
+                        # print("HEREEEEE")
                         self.peer_socket.send(("Negative").encode())
                     else:
                         self.peer_socket.send(("Positive").encode())
