@@ -30,23 +30,33 @@ class Peer:
 
     def connect_central(self, central_ip, central_port):
         self.peer_socket.connect((central_ip, central_port))
-        self.peer_socket.send(
-            (f"Connection succesfully established with Peer#{self.pport}").encode()
-        )
+        # self.peer_socket.send(
+        #     (f"Connection succesfully established with Peer#{self.pport}").encode()
+        # )
         threading.Thread(target = self.incoming_central).start()
 
     def incoming_central(self):
         while True:
             try:
                 query = self.peer_socket.recv(1024).decode()
+                print(query)
                 if query is not None:
-                    if not self.search_inventory(query):
-                        # print("HEREEEEE")
-                        self.peer_socket.send(("Negative").encode())
+                    query = query.split()
+                    if query[0] == "QUERY":
+                        if not self.search_inventory(query[1]):
+                            self.peer_socket.send(("Negative").encode())
+                        else:
+                            self.peer_socket.send(("Positive").encode())
+                            # Now listening to the incoming buyer using the trading socket
+                            self.incoming_peer()
                     else:
-                        self.peer_socket.send(("Positive").encode())
-                        # Now listening to the incoming buyer using the trading socket
-                        self.incoming_peer()
+                        sellers_list = pickle.loads(self.peer_socket.recv(1024))
+                        for ip,port in sellers_list:
+                            print(ip, port)
+                        ch = input("Choose the seller : ")
+                        seller_ip, port = sellers_list[ch]
+                        self.connect_to_seller(seller_ip, port)
+
 
             except KeyboardInterrupt:
                 self.socket.close()
@@ -66,12 +76,6 @@ class Peer:
     # used for forwarding purchase message
     def buy_request(self, query):
         self.peer_socket.send(f"QUERY {query}".encode())
-        while True:
-            sellers_list = pickle.load(
-                self.peer_socket.recv(1024)
-            )
-            # seller_ip, port = choose_seller(sellers_list)
-            # self.connect_to_seller(seller_ip, port)
 
     def connect_to_seller(self, ip:str, port:int):
         self.trading_socket.connect((ip, port))
