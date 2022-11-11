@@ -1,4 +1,4 @@
-import socket, pickle, threading
+import socket, pickle, threading, time
 from socket import AF_INET, SOCK_STREAM
 
 
@@ -47,37 +47,45 @@ class Peer:
                             self.peer_socket.send(("Negative").encode())
                         else:
                             self.peer_socket.send(("Positive").encode())
-                            # Now listening to the incoming buyer using the trading socket
-                            self.incoming_peer()
+                    
+                    elif query[0] == "Trade":
+                        print("Enter Trade")
+                        # Now listening to the incoming buyer using the trading socket
+                        self.trading_socket.listen(1)
+                        print("Listening for incoming buyer")
+                        self.peer_socket.send(("Trade "+str(self.tport)).encode())
+                        print("Trade port send")
+                        connection_socket, addr = self.trading_socket.accept()
+                        message = connection_socket.recv(1024).decode()
+                        print(message)
+                        connection_socket.send(("Positive").encode())
+                        self.trading_socket.close()
+
                     else:
                         sellers_list = pickle.loads(self.peer_socket.recv(1024))
                         for ip,port in sellers_list:
                             print(ip, port)
                         ch = input("Choose the seller : ")
-                        seller_ip, port = sellers_list[ch]
-                        self.connect_to_seller(seller_ip, port)
+                        self.peer_socket.send(ch.encode())
+                        seller_ip = sellers_list[0]
+                        print(seller_ip)
+                        port = int(self.peer_socket.recv(1024).decode())
+                        print(port)
+                        print("Got seller port")
+                        time.sleep(1)
+                        self.connect_to_seller(seller_ip[0], port)
 
 
             except KeyboardInterrupt:
                 self.socket.close()
                 return
 
-    def incoming_peer(self):
-        self.trading_socket.listen(1)
-        while True:
-            connection_socket, addr = self.trading_socket.accept()
-            message = connection_socket.recv(1024).decode()
-            connection_socket.send(("Positive").encode())
-            self.trading_socket.close()
-            self.incoming_central()
-            self.trading_socket.close()
-            return
-
     # used for forwarding purchase message
     def buy_request(self, query):
         self.peer_socket.send(f"QUERY {query}".encode())
 
     def connect_to_seller(self, ip:str, port:int):
+        print("Trying to connect to",ip,type(ip),port,type(port))
         self.trading_socket.connect((ip, port))
         while True:
             self.trading_socket.send(("Hey do you have dat ting?").encode())

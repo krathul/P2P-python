@@ -7,6 +7,7 @@ class Central:
     def __init__(self, port:int):
         self.Ledger = []
         self.seller_list = []
+        self.buyer_list =[]
         self.Socket = self.Create_Socket(port)
 
     def Create_Socket(self,port_no):
@@ -37,17 +38,28 @@ class Central:
             message = client_socket.recv(1024).decode()
             message=message.split()
             if message[0] == "QUERY":
+                self.buyer_list.append((client_socket,client_addr))
                 self.seller_list.clear()
                 sl_bin=self.Search_Peer(message[1], client_addr)
                 if sl_bin==None:
                     client_socket.send("Item Not Found".encode())
                 else:
                     client_socket.send("Bruh...Just Take it".encode())
+                    time.sleep(1)
                     client_socket.send(sl_bin)
                     chosen_seller:socket.socket
-                    chosen_seller = int(client_socket.recv(1024).decode())
-                    chosen_seller = self.Ledger[chosen_seller][0]
+                    ch = int(client_socket.recv(1024).decode())
+                    chosen_seller = self.Ledger[1][0]
                     chosen_seller.send("Trade".encode())
+
+            elif message[0] == "Trade":
+                    print("initiate the trade")
+                    seller_tport = message[1]
+                    print(seller_tport)
+                    buyer_socket = self.buyer_list[0][0]
+                    buyer_socket.send(seller_tport.encode())
+                    print("Port send to buyer")
+
             elif message[0] == "Positive":
                         self.seller_list.append(client_addr)
 
