@@ -13,20 +13,17 @@ class Central:
     def Create_Socket(self,port_no):
         ServerSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ServerSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        ServerSocket.bind((socket.gethostname(), port_no))
+        ServerSocket.bind((socket.gethostbyname('localhost'), port_no))
         return ServerSocket
 
     def Search_Peer(self, Item, client_addr):
             peer:socket.socket
         
             for peer,addr in self.Ledger:
-                print(client_addr, addr)
                 if addr != client_addr:
-                    print("Searching on ",addr[0]," ",addr[1])
                     peer.send(("QUERY " + Item).encode())
             
             time.sleep(2)
-            print(self.seller_list)
             if len(self.seller_list) == 0: return None
             
             sl_bin = pickle.dumps(self.seller_list)  # CONVERTS PYTHON OBJ TO BYTES
@@ -44,7 +41,7 @@ class Central:
                 if sl_bin==None:
                     client_socket.send("Item Not Found".encode())
                 else:
-                    client_socket.send("Bruh...Just Take it".encode())
+                    client_socket.send("Send list".encode())
                     time.sleep(1)
                     client_socket.send(sl_bin)
                     chosen_seller:socket.socket
@@ -55,10 +52,8 @@ class Central:
             elif message[0] == "Trade":
                     print("initiate the trade")
                     seller_tport = message[1]
-                    print(seller_tport)
                     buyer_socket = self.buyer_list[0][0]
                     buyer_socket.send(seller_tport.encode())
-                    print("Port send to buyer")
 
             elif message[0] == "Positive":
                         self.seller_list.append(client_addr)
@@ -69,6 +64,7 @@ class Central:
             # accept connections from outside
             (clientsocket, address) = self.Socket.accept()
             self.Ledger.append((clientsocket,address))
+            print("Connection established with #", address[0],address[1])
             # 
             threading.Thread(target = self.Communicate,args = (clientsocket,address)).start()
 

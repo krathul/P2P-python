@@ -14,6 +14,7 @@ class Peer:
 
     def create_socket(self, port, ip):
         new_socket = socket.socket(AF_INET, SOCK_STREAM)
+        new_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         new_socket.bind((ip, port))
 
         return new_socket
@@ -30,16 +31,13 @@ class Peer:
 
     def connect_central(self, central_ip, central_port):
         self.peer_socket.connect((central_ip, central_port))
-        # self.peer_socket.send(
-        #     (f"Connection succesfully established with Peer#{self.pport}").encode()
-        # )
         threading.Thread(target = self.incoming_central).start()
 
     def incoming_central(self):
         while True:
             try:
                 query = self.peer_socket.recv(1024).decode()
-                print(query)
+            
                 if query is not None:
                     query = query.split()
                     if query[0] == "QUERY":
@@ -54,24 +52,25 @@ class Peer:
                         self.trading_socket.listen(1)
                         print("Listening for incoming buyer")
                         self.peer_socket.send(("Trade "+str(self.tport)).encode())
-                        print("Trade port send")
                         connection_socket, addr = self.trading_socket.accept()
+                        print("Established connection with the buyer")
+                        connection_socket.send("Let's Trade".encode())
                         message = connection_socket.recv(1024).decode()
                         print(message)
-                        connection_socket.send(("Positive").encode())
+                        connection_socket.send(("!!!Item Bought!!!").encode())
                         self.trading_socket.close()
+                        print("Trading Done\n\n\n")
+                        self.peer_menu()
 
                     else:
                         sellers_list = pickle.loads(self.peer_socket.recv(1024))
+                        print("Found the following peers")
                         for ip,port in sellers_list:
                             print(ip, port)
                         ch = input("Choose the seller : ")
                         self.peer_socket.send(ch.encode())
                         seller_ip = sellers_list[0]
-                        print(seller_ip)
                         port = int(self.peer_socket.recv(1024).decode())
-                        print(port)
-                        print("Got seller port")
                         time.sleep(1)
                         self.connect_to_seller(seller_ip[0], port)
 
@@ -85,13 +84,22 @@ class Peer:
         self.peer_socket.send(f"QUERY {query}".encode())
 
     def connect_to_seller(self, ip:str, port:int):
-        print("Trying to connect to",ip,type(ip),port,type(port))
         self.trading_socket.connect((ip, port))
         while True:
-            self.trading_socket.send(("Hey do you have dat ting?").encode())
+            print("Connection established with the seller")
+            print(self.trading_socket.recv(1024).decode())
+            self.trading_socket.send(("Let's Trade").encode())
             recvd_message = self.trading_socket.recv(1024).decode()
-            print(recvd_message) # maybe print it
+            print(recvd_message)
+            print("\n\n\n")
             self.trading_socket.close()
+            self.peer_menu()
             return
 
-    
+    def peer_menu(self):
+        ch = int(input("What would you like to do?\n1.Buy Item\n2.Add Item to Sell\nEnter : "))
+        if ch == 1:
+            req_Item = input("What would you like to buy? : ")
+            self.buy_request(req_Item)
+        if ch == 2:
+            self.add_item(input("Enter the new item to be sold: "))
