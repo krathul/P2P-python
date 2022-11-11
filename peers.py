@@ -62,7 +62,11 @@ class Peer:
                         print("Trading Done\n\n\n")
                         self.peer_menu()
 
-                    else:
+                    elif query[0] == "Negative":
+                        print("!!!Item not found!!!\n\n\n")
+                        self.peer_menu()
+
+                    elif query[0] == "Positive":
                         sellers_list = pickle.loads(self.peer_socket.recv(1024))
                         print("Found the following peers")
                         for ip,port in sellers_list:

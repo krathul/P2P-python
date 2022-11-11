@@ -39,9 +39,9 @@ class Central:
                 self.seller_list.clear()
                 sl_bin=self.Search_Peer(message[1], client_addr)
                 if sl_bin==None:
-                    client_socket.send("Item Not Found".encode())
+                    client_socket.send("Negative".encode())
                 else:
-                    client_socket.send("Send list".encode())
+                    client_socket.send("Positive".encode())
                     time.sleep(1)
                     client_socket.send(sl_bin)
                     chosen_seller:socket.socket
